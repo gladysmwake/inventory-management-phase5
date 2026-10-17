@@ -144,7 +144,7 @@ The tests never call the real OpenFoodFacts API. `requests.get` is mocked with
 - every CLI command and its error handling
 
 To try the API by hand, start `python app.py` (debug mode is on) and send requests with
-Postman or curl. Postman needs the header `Content-Type: application/json` for POST and
+Postman or curl. A pre-configured Postman collection is included in [docs/inventory_api_postman_collection.json](docs/inventory_api_postman_collection.json), with detailed test cases in [docs/POSTMAN_GUIDE.md](docs/POSTMAN_GUIDE.md). Postman needs the header `Content-Type: application/json` for POST and
 PATCH requests.
 
 ## Notes

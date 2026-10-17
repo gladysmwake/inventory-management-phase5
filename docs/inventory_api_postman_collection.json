@@ -1,0 +1,205 @@
+{
+  "info": {
+    "name": "Inventory Management API",
+    "description": "Postman collection for the Inventory Management System Flask REST API.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. GET All Items",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://127.0.0.1:5000/inventory",
+          "protocol": "http",
+          "host": ["127", "0", "0", "1"],
+          "port": "5000",
+          "path": ["inventory"]
+        }
+      }
+    },
+    {
+      "name": "2. GET Single Item",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://127.0.0.1:5000/inventory/1",
+          "protocol": "http",
+          "host": ["127", "0", "0", "1"],
+          "port": "5000",
+          "path": ["inventory", "1"]
+        }
+      }
+    },
+    {
+      "name": "3. POST Create Item (Success 201)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"product_name\": \"Maize Flour\",\n  \"price\": 2.2,\n  \"stock\": 30,\n  \"barcode\": \"6001234567890\",\n  \"brands\": \"Jogoo\"\n}"
+        },
+        "url": {
+          "raw": "http://127.0.0.1:5000/inventory",
+          "protocol": "http",
+          "host": ["127", "0", "0", "1"],
+          "port": "5000",
+          "path": ["inventory"]
+        }
+      }
+    },
+    {
+      "name": "4. PATCH Update Item (Success 200)",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"stock\": 25\n}"
+        },
+        "url": {
+          "raw": "http://127.0.0.1:5000/inventory/4",
+          "protocol": "http",
+          "host": ["127", "0", "0", "1"],
+          "port": "5000",
+          "path": ["inventory", "4"]
+        }
+      }
+    },
+    {
+      "name": "5. DELETE Item (Success 200)",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "http://127.0.0.1:5000/inventory/4",
+          "protocol": "http",
+          "host": ["127", "0", "0", "1"],
+          "port": "5000",
+          "path": ["inventory", "4"]
+        }
+      }
+    },
+    {
+      "name": "6. POST Invalid Price (Failure 400)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"product_name\": \"Bad Price Item\",\n  \"price\": -1\n}"
+        },
+        "url": {
+          "raw": "http://127.0.0.1:5000/inventory",
+          "protocol": "http",
+          "host": ["127", "0", "0", "1"],
+          "port": "5000",
+          "path": ["inventory"]
+        }
+      }
+    },
+    {
+      "name": "7. GET Nonexistent Item (Failure 404)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://127.0.0.1:5000/inventory/999",
+          "protocol": "http",
+          "host": ["127", "0", "0", "1"],
+          "port": "5000",
+          "path": ["inventory", "999"]
+        }
+      }
+    },
+    {
+      "name": "8. PUT Method Not Allowed (Failure 405)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"stock\": 10\n}"
+        },
+        "url": {
+          "raw": "http://127.0.0.1:5000/inventory/1",
+          "protocol": "http",
+          "host": ["127", "0", "0", "1"],
+          "port": "5000",
+          "path": ["inventory", "1"]
+        }
+      }
+    },
+    {
+      "name": "9. GET Lookup by Barcode (OpenFoodFacts)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://127.0.0.1:5000/lookup/barcode/3017624010701",
+          "protocol": "http",
+          "host": ["127", "0", "0", "1"],
+          "port": "5000",
+          "path": ["lookup", "barcode", "3017624010701"]
+        }
+      }
+    },
+    {
+      "name": "10. GET Search by Name (OpenFoodFacts)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://127.0.0.1:5000/lookup/search?name=nutella",
+          "protocol": "http",
+          "host": ["127", "0", "0", "1"],
+          "port": "5000",
+          "path": ["lookup", "search"],
+          "query": [
+            {
+              "key": "name",
+              "value": "nutella"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "11. POST Enrich Item (OpenFoodFacts)",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "http://127.0.0.1:5000/inventory/2/enrich",
+          "protocol": "http",
+          "host": ["127", "0", "0", "1"],
+          "port": "5000",
+          "path": ["inventory", "2", "enrich"]
+        }
+      }
+    }
+  ]
+}
