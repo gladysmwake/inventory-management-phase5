@@ -1,15 +1,29 @@
-"""Logic that combines the store and OpenFoodFacts, so routes can stay thin."""
+"""Service layer bridging the internal inventory store and external OpenFoodFacts integration.
+
+Encapsulates data orchestration and domain logic away from HTTP request handlers.
+"""
 from . import off_client
 from .errors import ProductNotFoundError, ValidationError
 
+# Domain fields that can be safely enriched from external metadata
 ENRICHABLE_FIELDS = ("product_name", "brands", "ingredients_text")
 
 
 def enrich_item(store, item_id):
-    """Fill in an item's details from OpenFoodFacts using its barcode.
+    """Enrich an existing inventory item with product details from OpenFoodFacts.
 
-    Only fields OpenFoodFacts actually has are overwritten. Our own price and
-    stock are never touched.
+    Business Rules:
+    - Item must already have a non-empty `barcode`.
+    - Only non-empty attributes from OpenFoodFacts (`product_name`, `brands`,
+      `ingredients_text`) are applied.
+    - Local operational fields (`price`, `stock`, `id`) are strictly preserved and untouched.
+
+    Returns:
+        dict: The updated inventory item.
+
+    Raises:
+        ValidationError: If the item has no barcode.
+        ProductNotFoundError: If OpenFoodFacts has no record for this barcode.
     """
     item = store.get(item_id)
     if not item["barcode"]:
@@ -19,5 +33,6 @@ def enrich_item(store, item_id):
     if product is None:
         raise ProductNotFoundError(item["barcode"])
 
+    # Only overwrite attributes that actually returned non-empty values from the external API
     changes = {key: product[key] for key in ENRICHABLE_FIELDS if product[key]}
     return store.update(item_id, changes)
