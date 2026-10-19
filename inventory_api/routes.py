@@ -43,9 +43,9 @@ def add_item():
 @bp.patch("/inventory/<int:item_id>")
 def update_item(item_id):
     """Partially update an existing item's fields.
-    
-    Architectural Decision: Check for item existence (raising 404) BEFORE validating
-    the request body. If the resource doesn't exist, we should not evaluate input data.
+
+    Check for item existence before validating the body — no point
+    running validation if the thing doesn't even exist yet.
     """
     store = get_store()
     store.get(item_id)  # Returns 404 first if item does not exist

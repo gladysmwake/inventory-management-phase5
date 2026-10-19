@@ -10,20 +10,11 @@ ENRICHABLE_FIELDS = ("product_name", "brands", "ingredients_text")
 
 
 def enrich_item(store, item_id):
-    """Enrich an existing inventory item with product details from OpenFoodFacts.
+    """Pull product details from OpenFoodFacts and update a stored item.
 
-    Business Rules:
-    - Item must already have a non-empty `barcode`.
-    - Only non-empty attributes from OpenFoodFacts (`product_name`, `brands`,
-      `ingredients_text`) are applied.
-    - Local operational fields (`price`, `stock`, `id`) are strictly preserved and untouched.
-
-    Returns:
-        dict: The updated inventory item.
-
-    Raises:
-        ValidationError: If the item has no barcode.
-        ProductNotFoundError: If OpenFoodFacts has no record for this barcode.
+    The item needs a barcode to look anything up. Only non-empty fields
+    (product_name, brands, ingredients_text) get overwritten; price, stock
+    and id are never touched.
     """
     item = store.get(item_id)
     if not item["barcode"]:

@@ -1,9 +1,7 @@
-"""Input validation and sanitization for inventory items.
+"""Input validation helpers for inventory item payloads.
 
-Enforces strict boundary checking on incoming JSON payloads:
-- Whitelist filtering: Rejects any unknown or unexpected fields (preventing mass-assignment).
-- Python type nuance handling: Disallows booleans (since `bool` inherits from `int` in Python).
-- Non-empty constraints: Strips whitespace and ensures positive numeric constraints.
+Checks types, required fields, numeric ranges, and rejects any keys
+we don't recognise to stop clients sending junk we didn't ask for.
 """
 from .errors import ValidationError
 
@@ -13,23 +11,16 @@ TEXT_FIELDS = ("barcode", "brands", "ingredients_text")
 
 
 def validate_item(data, require_name=False):
-    """Validate a request dictionary and return a sanitized copy.
+    """Validate a request dict and return a sanitized copy.
 
-    Args:
-        data (dict): The parsed JSON payload from `request.get_json(silent=True)`.
-        require_name (bool): Set to True for POST (creation) where `product_name`
-            is mandatory, or False for PATCH (partial update) where fields are optional.
-
-    Returns:
-        dict: Sanitized and stripped item dictionary.
-
-    Raises:
-        ValidationError: If payload violates any data-type, range, or required constraints.
+    Pass require_name=True for POST (product_name is mandatory),
+    False for PATCH (all fields are optional).
+    Raises ValidationError with a message if anything looks wrong.
     """
     if not isinstance(data, dict) or not data:
         raise ValidationError("request body must be a JSON object")
 
-    # Whitelist defense: reject any payload containing unrecognized keys
+    # reject any keys we don't know about
     unknown = [key for key in data if key not in ALLOWED_FIELDS]
     if unknown:
         raise ValidationError(f"unknown field(s): {', '.join(unknown)}")
@@ -43,21 +34,20 @@ def validate_item(data, require_name=False):
             raise ValidationError("product_name is required and must be text")
         cleaned["product_name"] = name.strip()
 
-    # Price validation: must be a positive float or int.
-    # Note: in Python, `issubclass(bool, int)` is True, so `isinstance(True, int)` evaluates to True.
-    # An explicit check for `bool` is necessary to prevent `{"price": True}` from passing as 1.0.
+    # price must be a real number — note: bool is a subclass of int in Python, so
+    # we have to check for it explicitly or True/False would sneak through as 1/0
     if "price" in cleaned:
         price = cleaned["price"]
         if isinstance(price, bool) or not isinstance(price, (int, float)) or price < 0:
             raise ValidationError("price must be a number that is 0 or more")
 
-    # Stock validation: must be a non-negative whole integer (floats and booleans rejected)
+    # stock must be a whole number, same bool-subclass gotcha applies
     if "stock" in cleaned:
         stock = cleaned["stock"]
         if isinstance(stock, bool) or not isinstance(stock, int) or stock < 0:
             raise ValidationError("stock must be a whole number that is 0 or more")
 
-    # String type enforcement for auxiliary metadata fields
+    # make sure the remaining text fields are actually strings
     for key in TEXT_FIELDS:
         if key in cleaned and not isinstance(cleaned[key], str):
             raise ValidationError(f"{key} must be text")

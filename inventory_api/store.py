@@ -1,9 +1,7 @@
-"""Simulated in-memory database store for the Inventory Management System.
+"""In-memory data store for the Inventory Management System.
 
-Architectural Pattern: Repository / Data Store
-All persistence operations are encapsulated inside `InventoryStore`. The Flask route
-handlers only interact with this abstraction. If migrating to SQLAlchemy/PostgreSQL,
-only this class interface needs to be rewritten, leaving HTTP controllers untouched.
+All database-style operations live here so the route handlers stay thin.
+If we ever switch to SQLAlchemy, only this file needs changing.
 """
 from .errors import ItemNotFoundError
 
@@ -51,8 +49,7 @@ class InventoryStore:
 
     def __init__(self, items=None):
         self._items = []
-        # Monotonically increasing primary key counter. Deleted IDs are never recycled,
-        # mirroring the behavior of AUTOINCREMENT in relational database engines.
+        # IDs always go up — deleted IDs are never reused, just like SQL AUTOINCREMENT
         self._next_id = 1
         for item in (SEED_ITEMS if items is None else items):
             self.add(item)

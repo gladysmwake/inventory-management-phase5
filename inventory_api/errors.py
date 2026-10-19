@@ -32,8 +32,7 @@ def register_error_handlers(app):
     app.register_error_handler(ProductNotFoundError, lambda e: _json_error("product not found on OpenFoodFacts", 404))
     app.register_error_handler(ExternalAPIError, lambda e: _json_error(str(e), 502))
 
-    # REST Best Practice: Ensure Werkzeug framework errors (e.g., 404 for unknown URLs,
-    # 405 Method Not Allowed) return JSON payloads instead of default HTML pages.
+    # make sure Flask's built-in 404/405 errors also return JSON, not HTML
     @app.errorhandler(HTTPException)
     def handle_http_error(e):
         return _json_error(e.description, e.code)

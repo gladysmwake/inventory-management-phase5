@@ -1,7 +1,7 @@
-"""Client integration for the external OpenFoodFacts API (https://world.openfoodfacts.org).
+"""Wrapper around the OpenFoodFacts REST API (https://world.openfoodfacts.org).
 
-Encapsulates third-party network communication, User-Agent header compliance,
-response field projection, and translation of network errors into domain exceptions.
+Handles headers, timeouts, field filtering, and translates network errors
+into domain exceptions the route layer can handle cleanly.
 """
 import requests
 
@@ -12,15 +12,15 @@ BASE_URL = "https://world.openfoodfacts.org"
 HEADERS = {"User-Agent": "InventoryLab/1.0 (student project)"}
 # Explicitly project only needed fields to keep external payload transfers lightweight
 FIELDS = "code,product_name,brands,ingredients_text,quantity,categories"
-# Safe network timeout preventing worker thread exhaustion if external service hangs
+# safe timeout so we don't block forever if OpenFoodFacts is slow
 TIMEOUT = 10
 
 
 def _get_json(url, params):
-    """Execute GET request against OpenFoodFacts and parse the JSON payload.
-    
-    Translates raw socket, connection, timeout, and decoding failures into
-    a uniform `ExternalAPIError` (which the API layer converts to HTTP 502 Bad Gateway).
+    """Make a GET request to OpenFoodFacts and return parsed JSON.
+
+    Any network or decoding failure gets re-raised as ExternalAPIError
+    so the caller doesn't have to deal with raw requests exceptions.
     """
     try:
         response = requests.get(url, params=params, headers=HEADERS, timeout=TIMEOUT)
@@ -43,13 +43,10 @@ def _clean(product):
 
 def fetch_by_barcode(barcode):
     """Fetch product details for a specific barcode.
-    
-    OpenFoodFacts API Protocol:
-    - Status code: Can be 200 even for non-existent items.
-    - JSON payload status: `status: 1` indicates product exists; `status: 0` means not found.
-    
-    Returns:
-        dict: Cleaned product dictionary if found, or None if not found.
+
+    Note: OpenFoodFacts returns HTTP 200 even when nothing is found.
+    We have to check `status == 1` in the JSON to know if the product exists.
+    Returns a cleaned dict on success, or None if not found.
     """
     data = _get_json(f"{BASE_URL}/api/v2/product/{barcode}", {"fields": FIELDS})
     if data.get("status") != 1 or "product" not in data:
@@ -58,13 +55,11 @@ def fetch_by_barcode(barcode):
 
 
 def search_by_name(name, limit=5):
-    """Execute full-text query across OpenFoodFacts product titles.
-    
-    Uses the `/cgi/search.pl` endpoint because OpenFoodFacts v2 lacks freeform
-    full-text token matching.
-    
-    Returns:
-        list[dict]: List of matching cleaned product dictionaries (capped at `limit`).
+    """Search OpenFoodFacts by product name.
+
+    Uses the legacy /cgi/search.pl endpoint because the v2 API
+    doesn't support free-text search yet.
+    Returns a list of matching cleaned product dicts (up to `limit` results).
     """
     params = {
         "search_terms": name,
