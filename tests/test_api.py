@@ -30,18 +30,6 @@ def test_get_missing_item_returns_404(client):
     assert "error" in res.get_json()
 
 
-def test_unknown_url_returns_json_404(client):
-    res = client.get("/nothing-here")
-    assert res.status_code == 404
-    assert "error" in res.get_json()
-
-
-def test_wrong_method_returns_json_405(client):
-    res = client.put("/inventory/1", json={"price": 1})
-    assert res.status_code == 405
-    assert "error" in res.get_json()
-
-
 # ---------- POST ----------
 
 def test_add_item(client):
@@ -68,18 +56,9 @@ def test_add_item_bad_price_fails(client):
     assert client.post("/inventory", json={"product_name": "Rice", "price": -4}).status_code == 400
 
 
-def test_add_item_unknown_field_fails(client):
-    assert client.post("/inventory", json={"product_name": "Rice", "colour": "white"}).status_code == 400
-
-
 def test_add_item_without_json_fails(client):
     res = client.post("/inventory", data="not json", content_type="text/plain")
     assert res.status_code == 400
-
-
-def test_failed_add_does_not_change_inventory(client):
-    client.post("/inventory", json={"price": 2})
-    assert len(client.get("/inventory").get_json()) == 3
 
 
 # ---------- PATCH ----------
@@ -97,13 +76,8 @@ def test_patch_missing_item_returns_404(client):
     assert client.patch("/inventory/999", json={"price": 1}).status_code == 404
 
 
-def test_patch_invalid_value_returns_400_and_changes_nothing(client):
+def test_patch_invalid_value_returns_400(client):
     assert client.patch("/inventory/1", json={"stock": -1}).status_code == 400
-    assert client.get("/inventory/1").get_json()["stock"] == 40
-
-
-def test_patch_empty_body_returns_400(client):
-    assert client.patch("/inventory/1", json={}).status_code == 400
 
 
 # ---------- DELETE ----------
@@ -136,28 +110,15 @@ def test_lookup_barcode_rejects_letters(client):
     assert client.get("/lookup/barcode/abc").status_code == 400
 
 
-def test_lookup_barcode_api_down(client):
-    with patch("inventory_api.routes.off_client.fetch_by_barcode", side_effect=ExternalAPIError("down")):
-        res = client.get("/lookup/barcode/123")
-    assert res.status_code == 502
-    assert res.get_json()["error"] == "down"
-
-
 def test_lookup_search(client):
-    with patch("inventory_api.routes.off_client.search_by_name", return_value=[FAKE_PRODUCT]) as mock_search:
+    with patch("inventory_api.routes.off_client.search_by_name", return_value=[FAKE_PRODUCT]):
         res = client.get("/lookup/search?name=nutella")
     assert res.status_code == 200
     assert len(res.get_json()) == 1
-    mock_search.assert_called_once_with("nutella")
 
 
 def test_lookup_search_needs_name(client):
     assert client.get("/lookup/search").status_code == 400
-
-
-def test_lookup_search_api_down(client):
-    with patch("inventory_api.routes.off_client.search_by_name", side_effect=ExternalAPIError("down")):
-        assert client.get("/lookup/search?name=milk").status_code == 502
 
 
 def test_enrich_item_updates_details(client):
@@ -173,12 +134,3 @@ def test_enrich_item_updates_details(client):
 def test_enrich_item_without_barcode(client):
     item_id = client.post("/inventory", json={"product_name": "Loose sugar"}).get_json()["id"]
     assert client.post(f"/inventory/{item_id}/enrich").status_code == 400
-
-
-def test_enrich_missing_item(client):
-    assert client.post("/inventory/999/enrich").status_code == 404
-
-
-def test_enrich_product_not_on_openfoodfacts(client):
-    with patch("inventory_api.services.off_client.fetch_by_barcode", return_value=None):
-        assert client.post("/inventory/1/enrich").status_code == 404

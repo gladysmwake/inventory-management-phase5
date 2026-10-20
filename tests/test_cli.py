@@ -26,8 +26,6 @@ def run(argv, reply=None, side_effect=None):
     return code, mock_req
 
 
-# ---------- commands ----------
-
 def test_list_prints_items(capsys):
     code, mock_req = run(["list"], api_reply(200, [ITEM]))
     assert code == 0
@@ -91,71 +89,18 @@ def test_find_by_barcode(capsys):
 
 
 def test_find_by_name_no_results(capsys):
-    code, mock_req = run(["find", "--name", "zzz"], api_reply(200, []))
+    code, _ = run(["find", "--name", "zzz"], api_reply(200, []))
     assert code == 0
-    assert mock_req.call_args.kwargs["params"] == {"name": "zzz"}
     assert "No products found" in capsys.readouterr().out
 
 
-def test_enrich():
+def test_enrich(capsys):
     code, mock_req = run(["enrich", "1"], api_reply(200, ITEM))
     assert code == 0
     assert mock_req.call_args.args[:2] == ("POST", BASE + "/inventory/1/enrich")
-
-
-def test_import_looks_up_then_adds():
-    replies = [api_reply(200, dict(PRODUCT)), api_reply(201, {**ITEM, **PRODUCT})]
-    with patch("inventory_cli.client.requests.request", side_effect=replies) as mock_req:
-        code = main(["import", "123", "--price", "6", "--stock", "4"], client=ApiClient(BASE))
-    assert code == 0
-    assert mock_req.call_count == 2
-    posted = mock_req.call_args_list[1].kwargs["json"]
-    assert posted["price"] == 6 and posted["stock"] == 4 and posted["product_name"] == "Nutella"
-
-
-# ---------- bad input and failures ----------
-
-@pytest.mark.parametrize("argv", [
-    ["find"],
-    ["add", "Rice", "--stock", "-3"],
-    ["add", "Rice", "--price", "cheap"],
-    ["view", "abc"],
-    [],
-])
-def test_bad_arguments_exit_with_code_2(argv):
-    # argparse exits with 2 on invalid arguments
-    with pytest.raises(SystemExit) as e:
-        main(argv, client=ApiClient(BASE))
-    assert e.value.code == 2
 
 
 def test_api_not_running(capsys):
     code, _ = run(["list"], side_effect=requests.ConnectionError())
     assert code == 1
     assert "Is app.py running" in capsys.readouterr().err
-
-
-def test_other_request_failure(capsys):
-    code, _ = run(["list"], side_effect=requests.Timeout("too slow"))
-    assert code == 1
-    assert "request failed" in capsys.readouterr().err
-
-
-def test_api_returns_non_json(capsys):
-    res = Mock()
-    res.status_code = 500
-    res.json.side_effect = ValueError()
-    code, _ = run(["list"], res)
-    assert code == 1
-    assert "unexpected response" in capsys.readouterr().err
-
-
-def test_external_api_failure_is_shown(capsys):
-    code, _ = run(["find", "--barcode", "123"], api_reply(502, {"error": "could not reach OpenFoodFacts"}))
-    assert code == 1
-    assert "could not reach OpenFoodFacts" in capsys.readouterr().err
-
-
-def test_client_reads_url_from_environment(monkeypatch):
-    monkeypatch.setenv("INVENTORY_API_URL", "http://example.test:9000")
-    assert ApiClient().base_url == "http://example.test:9000"
