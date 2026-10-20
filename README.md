@@ -147,6 +147,14 @@ To try the API by hand, start `python app.py` (debug mode is on) and send reques
 Postman or curl. A pre-configured Postman collection is included in [docs/inventory_api_postman_collection.json](docs/inventory_api_postman_collection.json), with detailed test cases in [docs/POSTMAN_GUIDE.md](docs/POSTMAN_GUIDE.md). Postman needs the header `Content-Type: application/json` for POST and
 PATCH requests.
 
+## Git workflow
+
+Development followed a feature-branch and pull request workflow:
+- Each major milestone was implemented on its own feature branch (`feature/store-and-routes`, `feature/openfoodfacts`, `feature/cli`, `feature/tests`, `feature/docs`).
+- Changes were reviewed and merged into `main` via Pull Requests (PR #1 through #5).
+- Following best practice, merged feature branches were cleared after merge to keep the repository history clean.
+- All merged PRs and commit history are preserved in the GitHub commit graph and PR history.
+
 ## Notes
 
 - OpenFoodFacts asks apps to send a custom `User-Agent`, which `off_client.py` does.
